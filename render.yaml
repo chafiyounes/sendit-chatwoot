@@ -1,0 +1,87 @@
+services:
+  - type: web
+    name: chatwoot-web
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: RAILS_SERVE_STATIC_FILES
+        value: "true"
+      - key: RAILS_LOG_TO_STDOUT
+        value: "true"
+      - key: ENABLE_ACCOUNT_SIGNUP
+        value: "true"
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=4096"
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          property: host
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: chatwoot-redis
+          property: connectionString
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: chatwoot-db
+          property: host
+      - key: POSTGRES_USERNAME
+        fromDatabase:
+          name: chatwoot-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: chatwoot-db
+          property: password
+      - key: POSTGRES_DATABASE
+        fromDatabase:
+          name: chatwoot-db
+          property: database
+
+  - type: worker
+    name: chatwoot-worker
+    runtime: docker
+    dockerfilePath: ./docker/Dockerfile
+    dockerCommand: bundle exec sidekiq -C config/sidekiq.yml
+    envVars:
+      - key: RAILS_ENV
+        value: production
+      - key: SECRET_KEY_BASE
+        fromService:
+          type: web
+          name: chatwoot-web
+          envVarKey: SECRET_KEY_BASE
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: chatwoot-redis
+          property: connectionString
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: chatwoot-db
+          property: host
+      - key: POSTGRES_USERNAME
+        fromDatabase:
+          name: chatwoot-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: chatwoot-db
+          property: password
+      - key: POSTGRES_DATABASE
+        fromDatabase:
+          name: chatwoot-db
+          property: database
+
+databases:
+  - name: chatwoot-db
+    plan: free
+    databaseName: chatwoot
+    user: chatwoot
+
+  - name: chatwoot-redis
+    plan: free
