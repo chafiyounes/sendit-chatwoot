@@ -12,11 +12,13 @@
 
 ActiveRecord::Schema[7.1].define(version: 2026_01_30_061021) do
   # These extensions should be enabled to support this database
-  enable_extension "pg_stat_statements"
-  enable_extension "pg_trgm"
-  enable_extension "pgcrypto"
-  enable_extension "plpgsql"
-  enable_extension "vector"
+  %w[pg_stat_statements pg_trgm pgcrypto plpgsql vector].each do |ext|
+    begin
+      enable_extension ext
+    rescue ActiveRecord::StatementInvalid
+      puts "WARNING: #{ext} extension not available, skipping."
+    end
+  end
 
   create_table "access_tokens", force: :cascade do |t|
     t.string "owner_type"
