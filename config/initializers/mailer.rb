@@ -1,3 +1,10 @@
+if ENV['BREVO_API_KEY'].present?
+  require Rails.root.join('lib/brevo_delivery_method')
+  ActionMailer::Base.add_delivery_method :brevo, BrevoDeliveryMethod,
+                                         api_key: ENV['BREVO_API_KEY'],
+                                         sender_email: ENV.fetch('MAILER_SENDER_EMAIL', nil)
+end
+
 Rails.application.configure do
   #########################################
   # Configuration Related to Action Mailer
@@ -30,8 +37,11 @@ Rails.application.configure do
   config.action_mailer.delivery_method = :smtp unless Rails.env.test?
   config.action_mailer.smtp_settings = smtp_settings
 
+  # Use Brevo HTTP API if configured (overrides SMTP, works on Railway)
+  config.action_mailer.delivery_method = :brevo if ENV['BREVO_API_KEY'].present? && !Rails.env.test?
+
   # Use sendmail if using postfix for email
-  config.action_mailer.delivery_method = :sendmail if ENV['SMTP_ADDRESS'].blank?
+  config.action_mailer.delivery_method = :sendmail if ENV['SMTP_ADDRESS'].blank? && ENV['BREVO_API_KEY'].blank?
 
   # You can use letter opener for your local development by setting the environment variable
   config.action_mailer.delivery_method = :letter_opener if Rails.env.development? && ENV['LETTER_OPENER']
